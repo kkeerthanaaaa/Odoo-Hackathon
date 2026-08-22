@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}User Accounts - Dayflow HRMS{% endblock %}
+{% block page_title %}User Accounts{% endblock %}
+{% block page_sub %}Manage login accounts and roles{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="section-card">
+      <h6 class="section-title mb-3">All Accounts</h6>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Username</th><th>Email</th><th>Employee</th><th>Role</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+          <tbody>
+          {% for u in users %}
+          <tr>
+            <td class="fw-semibold">{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.employee.full_name if u.employee else '—' }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('user_change_role', user_id=u.id) }}" class="d-inline-flex gap-1">
+                <select name="role" class="form-select form-select-sm" style="width:110px;" {{ 'disabled' if u.id == current_user.id }}>
+                  {% for r in roles %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ r }}</option>{% endfor %}
+                </select>
+                {% if u.id != current_user.id %}<button class="btn btn-sm btn-outline-primary">Set</button>{% endif %}
+              </form>
+            </td>
+            <td><span class="badge {{ 'badge-soft-green' if u.is_active_account else 'badge-soft-red' }}">{{ 'Active' if u.is_active_account else 'Deactivated' }}</span></td>
+            <td class="text-end">
+              {% if u.id != current_user.id %}
+              <button class="btn btn-sm btn-outline-primary btn-icon" title="{{ 'Deactivate' if u.is_active_account else 'Activate' }}" data-confirm
+                data-confirm-title="{{ 'Deactivate' if u.is_active_account else 'Activate' }} {{ u.username }}?"
+                data-confirm-body="{{ 'They will no longer be able to log in.' if u.is_active_account else 'They will regain access to log in.' }}"
+                data-confirm-action="{{ url_for('user_toggle_active', user_id=u.id) }}"
+                data-confirm-submit-class="{{ 'btn-danger' if u.is_active_account else 'btn-primary' }}" data-confirm-submit-label="Confirm">
+                <i class="fa-solid fa-power-off"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-primary btn-icon" title="Reset Password" data-bs-toggle="modal" data-bs-target="#resetModal{{ u.id }}"><i class="fa-solid fa-key"></i></button>
+              <button class="btn btn-sm btn-outline-primary btn-icon" title="Delete" data-confirm
+                data-confirm-title="Delete account {{ u.username }}?"
+                data-confirm-body="This permanently removes their login. Their employee record, if any, is not affected."
+                data-confirm-action="{{ url_for('user_delete', user_id=u.id) }}"
+                data-confirm-submit-class="btn-danger" data-confirm-submit-label="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+              <div class="modal fade" id="resetModal{{ u.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body p-4">
+                  <h6 class="fw-bold mb-3">Reset password for {{ u.username }}</h6>
+                  <form method="POST" action="{{ url_for('user_reset_password', user_id=u.id) }}">
+                    <div class="mb-3"><label class="form-label">New Password</label><input type="password" name="new_password" class="form-control" minlength="6" required></div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancel</button>
+                      <button class="btn btn-primary">Reset Password</button>
+                    </div>
+                  </form>
+                </div></div></div>
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}<tr><td colspan="6" class="text-muted small text-center py-3">No user accounts.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="section-card">
+      <h6 class="section-title mb-3">Create Account</h6>
+      <form method="POST">
+        <div class="mb-2"><label class="form-label">Username</label><input type="text" name="username" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required></div>
+        <div class="mb-2">
+          <label class="form-label">Link to Employee</label>
+          <select name="employee_id" class="form-select">
+            <option value="">— No employee link (e.g. Admin) —</option>
+            {% for e in employees %}<option value="{{ e.id }}">{{ e.full_name }} ({{ e.designation }})</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-select">
+            {% for r in roles %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Password</label><input type="password" name="password" class="form-control" minlength="6" required></div>
+        <button class="btn btn-primary w-100">Create Account</button>
+      </form>
+      {% if not employees %}
+      <p class="text-muted small mt-2 mb-0">All active employees already have a login account.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

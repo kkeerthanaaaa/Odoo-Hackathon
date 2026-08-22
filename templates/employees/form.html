@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Employee' if emp else 'Add Employee' }} - Dayflow HRMS{% endblock %}
+{% block page_title %}{{ 'Edit ' + emp.full_name if emp else 'Add Employee' }}{% endblock %}
+{% block page_sub %}{{ 'Update employee record' if emp else 'Create a new employee record' }}{% endblock %}
+{% block content %}
+<div class="section-card" style="max-width:840px;">
+  <form method="POST">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Employee Code</label>
+        <input type="text" name="employee_code" class="form-control" value="{{ emp.employee_code if emp else '' }}" {{ 'readonly' if emp }} required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">First Name</label>
+        <input type="text" name="first_name" class="form-control" value="{{ emp.first_name if emp else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Last Name</label>
+        <input type="text" name="last_name" class="form-control" value="{{ emp.last_name if emp else '' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" value="{{ emp.email if emp else '' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Phone</label>
+        <input type="tel" name="phone" class="form-control" pattern="[0-9+ \-]{7,15}" value="{{ emp.phone if emp else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Designation</label>
+        <input type="text" name="designation" class="form-control" value="{{ emp.designation if emp else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Department</label>
+        <select name="department_id" class="form-select">
+          <option value="">— Select department —</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}" {{ 'selected' if emp and emp.department_id == d.id }}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Gender</label>
+        <select name="gender" class="form-select">
+          {% for g in ['Male','Female','Other'] %}
+          <option value="{{ g }}" {{ 'selected' if emp and emp.gender == g }}>{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Reporting Manager</label>
+        <select name="reports_to" class="form-select">
+          <option value="">— No manager —</option>
+          {% for m in employees %}
+          <option value="{{ m.id }}" {{ 'selected' if emp and emp.reports_to == m.id }}>{{ m.full_name }} ({{ m.designation }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if not emp %}
+      <div class="col-md-6">
+        <label class="form-label">Date of Joining</label>
+        <input type="date" name="date_of_joining" class="form-control" value="{{ date.today() }}">
+      </div>
+      {% else %}
+      <div class="col-md-6">
+        <label class="form-label">Employment Status</label>
+        <select name="employment_status" class="form-select">
+          {% for s in ['Onboarding','Active','On Leave','Notice Period','Inactive','Exited'] %}
+          <option value="{{ s }}" {{ 'selected' if emp.employment_status == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-md-6">
+        <label class="form-label">Basic Salary (monthly, &#8377;)</label>
+        <input type="number" min="0" step="0.01" name="basic_salary" class="form-control" value="{{ emp.basic_salary if emp else 0 }}">
+      </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a href="{{ url_for('employee_list') if not emp else url_for('employee_detail', emp_id=emp.id) }}" class="btn btn-outline-primary">Cancel</a>
+      <button class="btn btn-primary">{{ 'Save Changes' if emp else 'Create Employee' }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

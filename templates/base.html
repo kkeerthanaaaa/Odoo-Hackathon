@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Dayflow HRMS{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">D</div>
+      <div class="brand-text">
+        <div class="brand-title">Dayflow</div>
+        <div class="brand-sub">HR Management System</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <a class="nav-link {{ 'active' if request.endpoint=='dashboard' }}" href="{{ url_for('dashboard') }}"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+      {% if current_user.role in ('Admin','CEO','HR','Manager') %}
+      <a class="nav-link {{ 'active' if request.endpoint=='reports' }}" href="{{ url_for('reports') }}"><i class="fa-solid fa-chart-line"></i> Reports</a>
+      {% endif %}
+      <a class="nav-link {{ 'active' if request.endpoint=='chatbot_page' }}" href="{{ url_for('chatbot_page') }}"><i class="fa-solid fa-robot"></i> Assistant</a>
+
+      <div class="sidebar-section-label">Workforce</div>
+      {% if current_user.role == 'Manager' %}
+      <a class="nav-link {{ 'active' if request.endpoint=='my_team' }}" href="{{ url_for('my_team') }}"><i class="fa-solid fa-people-group"></i> My Team</a>
+      {% elif current_user.role in ('Admin','CEO','HR') %}
+      <a class="nav-link {{ 'active' if request.endpoint=='employee_list' }}" href="{{ url_for('employee_list') }}"><i class="fa-solid fa-users"></i> Employees</a>
+      {% endif %}
+      {% if current_user.role in ('Admin','HR') %}
+      <a class="nav-link {{ 'active' if request.endpoint=='department_list' }}" href="{{ url_for('department_list') }}"><i class="fa-solid fa-building"></i> Departments</a>
+      <a class="nav-link {{ 'active' if request.endpoint=='recruitment_list' or request.endpoint=='job_detail' }}" href="{{ url_for('recruitment_list') }}"><i class="fa-solid fa-briefcase"></i> Recruitment</a>
+      {% elif current_user.role in ('CEO',) %}
+      <a class="nav-link {{ 'active' if request.endpoint=='recruitment_list' or request.endpoint=='job_detail' }}" href="{{ url_for('recruitment_list') }}"><i class="fa-solid fa-briefcase"></i> Recruitment</a>
+      {% endif %}
+
+      <div class="sidebar-section-label">Time &amp; Leave</div>
+      <a class="nav-link {{ 'active' if request.endpoint=='attendance_list' }}" href="{{ url_for('attendance_list') }}"><i class="fa-solid fa-clock"></i> Attendance</a>
+      <a class="nav-link {{ 'active' if request.endpoint=='leave_list' or request.endpoint=='leave_apply' or request.endpoint=='leave_edit' }}" href="{{ url_for('leave_list') }}"><i class="fa-solid fa-plane-departure"></i> Leave</a>
+      {% if current_user.role in ('Admin','HR') %}
+      <a class="nav-link {{ 'active' if request.endpoint=='leave_type_list' }}" href="{{ url_for('leave_type_list') }}"><i class="fa-solid fa-list-check"></i> Leave Types</a>
+      {% endif %}
+
+      <div class="sidebar-section-label">Money</div>
+      <a class="nav-link {{ 'active' if request.endpoint in ('payroll_home','payroll_slip_detail') }}" href="{{ url_for('payroll_home') }}"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
+
+      {% if current_user.role == 'Admin' %}
+      <div class="sidebar-section-label">System</div>
+      <a class="nav-link {{ 'active' if request.endpoint=='user_list' }}" href="{{ url_for('user_list') }}"><i class="fa-solid fa-user-shield"></i> User Accounts</a>
+      <a class="nav-link {{ 'active' if request.endpoint=='audit_log_view' }}" href="{{ url_for('audit_log_view') }}"><i class="fa-solid fa-clipboard-list"></i> Audit Log</a>
+      <a class="nav-link {{ 'active' if request.endpoint=='admin_home' }}" href="{{ url_for('admin_home') }}"><i class="fa-solid fa-sliders"></i> System Admin</a>
+      {% elif current_user.role == 'CEO' %}
+      <div class="sidebar-section-label">System</div>
+      <a class="nav-link {{ 'active' if request.endpoint=='audit_log_view' }}" href="{{ url_for('audit_log_view') }}"><i class="fa-solid fa-clipboard-list"></i> Audit Log</a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="avatar-circle sm">{{ current_user.username[0]|upper }}</div>
+      <div class="flex-grow-1 overflow-hidden">
+        <div class="fw-semibold small text-truncate">{{ current_user.username }}</div>
+        <div class="role-chip">{{ current_user.role }}</div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="btn btn-icon btn-outline-primary btn-sm" title="Log out"><i class="fa-solid fa-right-from-bracket"></i></a>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="mobile-topbar">
+      <button class="btn btn-icon btn-outline-primary" onclick="toggleSidebar(true)"><i class="fa-solid fa-bars"></i></button>
+      <span class="fw-bold">Dayflow</span>
+      <a class="bell-btn" href="{{ url_for('notification_list') }}">
+        <i class="fa-regular fa-bell"></i>
+        {% if unread_count > 0 %}<span class="bell-dot"></span>{% endif %}
+      </a>
+    </div>
+
+    <div class="topbar">
+      <div>
+        <h3>{% block page_title %}Dashboard{% endblock %}</h3>
+        <div class="topbar-sub">{% block page_sub %}{{ date.today().strftime('%A, %d %B %Y') }}{% endblock %}</div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-pill"><i class="fa-regular fa-calendar me-1"></i>{{ date.today().strftime('%d %b %Y') }}</span>
+        <div class="dropdown">
+          <a class="bell-btn dropdown-toggle" style="text-decoration:none;" data-bs-toggle="dropdown" href="#">
+            <i class="fa-regular fa-bell"></i>
+            {% if unread_count > 0 %}<span class="bell-dot"></span>{% endif %}
+          </a>
+          <div class="dropdown-menu dropdown-menu-end notif-dropdown p-0">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <span class="fw-bold small">Notifications</span>
+              {% if unread_count > 0 %}
+              <form method="POST" action="{{ url_for('notification_mark_all_read') }}" class="mb-0">
+                <button class="btn btn-link btn-sm p-0 small">Mark all read</button>
+              </form>
+              {% endif %}
+            </div>
+            {% set recent_notifs = current_user.notifications | sort(attribute='created_on', reverse=True) %}
+            {% for n in recent_notifs[:6] %}
+            <div class="notif-item {{ 'unread' if not n.is_read }}">
+              <i class="fa-solid fa-circle-info text-primary mt-1"></i>
+              <div class="flex-grow-1">
+                <div class="small">{{ n.message }}</div>
+                <div class="text-muted" style="font-size:0.72rem;">{{ n.created_on.strftime('%d %b, %I:%M %p') }}</div>
+              </div>
+            </div>
+            {% else %}
+            <div class="empty-state py-3"><i class="fa-regular fa-bell-slash"></i><div class="small">No notifications yet</div></div>
+            {% endfor %}
+            <div class="text-center py-2 border-top">
+              <a href="{{ url_for('notification_list') }}" class="small fw-semibold">View all notifications</a>
+            </div>
+          </div>
+        </div>
+        <a class="topbar-pill" href="{{ url_for('settings') }}" style="text-decoration:none;"><i class="fa-solid fa-gear me-1"></i>Settings</a>
+      </div>
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<!-- Chatbot floating widget -->
+<div class="chatbot-widget" id="chatbotWidget">
+  <button class="chatbot-fab" id="chatbotFab" title="Dayflow Assistant">
+    <i class="fa-solid fa-robot"></i>
+  </button>
+  <div class="chatbot-panel" id="chatbotPanel">
+    <div class="chatbot-panel-header">
+      <div class="d-flex align-items-center gap-2">
+        <div class="avatar-circle sm chatbot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div>
+          <div class="fw-bold small text-white">Dayflow Assistant</div>
+          <div class="chatbot-header-sub">Ask me anything about HR</div>
+        </div>
+      </div>
+      <button class="chatbot-close-btn" id="chatbotCloseBtn" title="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="chatbot-panel-body" id="chatbotWidgetMessages"></div>
+    <form class="chatbot-panel-input" id="chatbotWidgetForm" autocomplete="off">
+      <input type="text" class="form-control" id="chatbotWidgetInput" placeholder="Type a message…" maxlength="500" required>
+      <button type="submit" class="btn btn-primary btn-icon"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script>DayflowChatbot.initWidget();</script>
+{% else %}
+  {% block guest_content %}{% endblock %}
+{% endif %}
+
+<!-- Global confirm modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-4">
+        <h6 class="fw-bold mb-2" id="confirmModalTitle">Are you sure?</h6>
+        <p class="text-muted small mb-4" id="confirmModalBody">This action cannot be undone.</p>
+        <form method="POST" id="confirmModalForm">
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="confirmModalSubmit">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar(open) {
+  document.getElementById('sidebar').classList.toggle('open', open);
+  document.getElementById('sidebarBackdrop').classList.toggle('show', open);
+}
+
+// Generic confirm-modal trigger.
+// Usage: <button data-confirm data-confirm-title="Deactivate employee?" data-confirm-body="..." data-confirm-action="/employees/1/archive" data-confirm-submit-class="btn-danger" data-confirm-submit-label="Archive">
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('[data-confirm]');
+  if (!btn) return;
+  e.preventDefault();
+  const modalEl = document.getElementById('confirmModal');
+  document.getElementById('confirmModalTitle').textContent = btn.dataset.confirmTitle || 'Are you sure?';
+  document.getElementById('confirmModalBody').textContent = btn.dataset.confirmBody || 'This action cannot be undone.';
+  const form = document.getElementById('confirmModalForm');
+  form.action = btn.dataset.confirmAction;
+  const submitBtn = document.getElementById('confirmModalSubmit');
+  submitBtn.className = 'btn ' + (btn.dataset.confirmSubmitClass || 'btn-primary');
+  submitBtn.textContent = btn.dataset.confirmSubmitLabel || 'Confirm';
+
+  // Optional extra fields (e.g. rejection reason) as JSON in data-confirm-extra
+  form.querySelectorAll('input[data-dynamic]').forEach(el => el.remove());
+  if (btn.dataset.confirmExtra) {
+    try {
+      const extra = JSON.parse(btn.dataset.confirmExtra);
+      Object.entries(extra).forEach(([k, v]) => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = k; inp.value = v; inp.setAttribute('data-dynamic', '1');
+        form.appendChild(inp);
+      });
+    } catch (err) {}
+  }
+  new bootstrap.Modal(modalEl).show();
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

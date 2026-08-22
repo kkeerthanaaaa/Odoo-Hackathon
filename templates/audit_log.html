@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log - Dayflow HRMS{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block page_sub %}Full history of important system actions{% endblock %}
+{% block content %}
+<div class="section-card">
+  <form method="GET" class="d-flex gap-2 mb-3">
+    <div class="search-box flex-grow-1"><i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Search action, user or record">
+    </div>
+    <button class="btn btn-primary">Search</button>
+  </form>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>Target</th><th>Change</th></tr></thead>
+      <tbody>
+      {% for l in logs %}
+      <tr>
+        <td class="text-nowrap small">{{ l.timestamp.strftime('%d %b %Y, %I:%M %p') }}</td>
+        <td>{{ l.username }}</td>
+        <td><span class="role-chip">{{ l.role or '—' }}</span></td>
+        <td>{{ l.action }}</td>
+        <td class="small">{{ l.target_repr or '—' }}</td>
+        <td class="small text-muted">
+          {% if l.old_value or l.new_value %}
+            {% if l.old_value %}<span>{{ l.old_value }}</span> &rarr; {% endif %}{% if l.new_value %}<span class="fw-semibold">{{ l.new_value }}</span>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="6" class="text-muted small text-center py-3">No audit entries found.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

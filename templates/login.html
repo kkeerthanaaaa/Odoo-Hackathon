@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Sign in - Dayflow HRMS{% endblock %}
+{% block guest_content %}
+<div class="login-wrapper">
+  <div class="login-visual">
+    <div class="brand-mark mb-4" style="width:56px;height:56px;font-size:1.5rem;background:rgba(255,255,255,0.15);">D</div>
+    <h1>Run your entire workforce from one calm, organized place.</h1>
+    <p>Attendance, leave, payroll, recruitment and approvals &mdash; built for real organizational hierarchy with full audit history.</p>
+    <div class="mt-5 d-flex gap-4">
+      <div>
+        <div style="font-size:1.6rem;font-weight:700;">5</div>
+        <div class="small opacity-75">Role levels</div>
+      </div>
+      <div>
+        <div style="font-size:1.6rem;font-weight:700;">100%</div>
+        <div class="small opacity-75">Reversible actions</div>
+      </div>
+      <div>
+        <div style="font-size:1.6rem;font-weight:700;">Full</div>
+        <div class="small opacity-75">Audit trail</div>
+      </div>
+    </div>
+  </div>
+  <div class="login-form-side">
+    <div class="card login-card shadow-lg">
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="brand-mark mx-auto mb-3" style="width:52px;height:52px;">D</div>
+          <h3 class="mt-1 mb-0 fw-bold">Dayflow HRMS</h3>
+          <p class="text-muted small">Sign in to your HR workspace</p>
+        </div>
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 text-white">Sign In</button>
+        </form>
+        <div class="alert alert-info mt-4 small mb-0">
+          <strong class="d-block mb-1">Demo accounts <span class="text-muted fw-normal">(click to fill)</span></strong>
+          <div class="demo-account-row" onclick="fill('admin','admin123')"><span>Admin</span><code>admin / admin123</code></div>
+          <div class="demo-account-row" onclick="fill('meera','ceo12345')"><span>CEO</span><code>meera / ceo12345</code></div>
+          <div class="demo-account-row" onclick="fill('asha','hr123456')"><span>HR</span><code>asha / hr123456</code></div>
+          <div class="demo-account-row" onclick="fill('karan','mgr12345')"><span>Manager</span><code>karan / mgr12345</code></div>
+          <div class="demo-account-row" onclick="fill('akash','emp123456')"><span>Employee</span><code>akash / emp123456</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function fill(u, p) {
+  document.querySelector('input[name="username"]').value = u;
+  document.querySelector('input[name="password"]').value = p;
+}
+</script>
+{% endblock %}

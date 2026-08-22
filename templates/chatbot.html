@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Assistant - Dayflow HRMS{% endblock %}
+{% block page_title %}Dayflow Assistant{% endblock %}
+{% block page_sub %}Ask about your leave, attendance, payroll, or profile{% endblock %}
+{% block content %}
+<div class="section-card p-0 chatbot-page-card">
+  <div class="chatbot-page-header">
+    <div class="d-flex align-items-center gap-2">
+      <div class="avatar-circle sm chatbot-avatar"><i class="fa-solid fa-robot"></i></div>
+      <div>
+        <div class="fw-bold small">Dayflow Assistant</div>
+        <div class="text-muted" style="font-size:0.72rem;">Answers using your own HR data</div>
+      </div>
+    </div>
+    <button class="btn btn-outline-primary btn-sm" id="chatbotClearBtn"><i class="fa-solid fa-broom me-1"></i>Clear</button>
+  </div>
+  <div class="chatbot-page-body" id="chatbotMessages">
+    {% for m in history %}
+    <div class="chat-bubble-row {{ 'from-user' if m.sender == 'user' else 'from-bot' }}">
+      <div class="chat-bubble">{{ m.message }}</div>
+      <div class="chat-bubble-time">{{ m.created_on.strftime('%I:%M %p') }}</div>
+    </div>
+    {% else %}
+    <div class="chat-bubble-row from-bot">
+      <div class="chat-bubble">Hi {{ current_user.username }}! I'm the Dayflow Assistant. Ask me about your leave balance, attendance, payslip, or profile — or type "help" to see everything I can do.</div>
+    </div>
+    {% endfor %}
+  </div>
+  <form class="chatbot-page-input" id="chatbotPageForm" autocomplete="off">
+    <input type="text" class="form-control" id="chatbotPageInput" placeholder="Type a message…" maxlength="500" required>
+    <button type="submit" class="btn btn-primary btn-icon"><i class="fa-solid fa-paper-plane"></i></button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script>DayflowChatbot.initPage();</script>
+{% endblock %}

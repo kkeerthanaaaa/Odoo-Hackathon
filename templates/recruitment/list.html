@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Recruitment - Dayflow HRMS{% endblock %}
+{% block page_title %}Recruitment{% endblock %}
+{% block page_sub %}Open positions and applicants{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="section-card">
+      <h6 class="section-title mb-3">Job Openings</h6>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Title</th><th>Department</th><th>Applicants</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+          <tbody>
+          {% for j in jobs %}
+          <tr>
+            <td><a href="{{ url_for('job_detail', job_id=j.id) }}" class="fw-semibold">{{ j.title }}</a></td>
+            <td>{{ j.department.name if j.department else '—' }}</td>
+            <td>{{ j.applicants|length }}</td>
+            <td><span class="badge status-{{ j.status|replace(' ','-') }}">{{ j.status }}</span></td>
+            <td class="text-end">
+              {% if current_user.role in ('Admin','HR') %}
+              <form method="POST" action="{{ url_for('job_close', job_id=j.id) }}">
+                <button class="btn btn-sm btn-outline-primary">{{ 'Reopen' if j.status == 'Closed' else 'Close' }}</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}<tr><td colspan="5" class="text-muted small text-center py-3">No job openings yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    {% if current_user.role in ('Admin','HR') %}
+    <div class="section-card">
+      <h6 class="section-title mb-3">Post Job Opening</h6>
+      <form method="POST" action="{{ url_for('job_new') }}">
+        <div class="mb-2"><label class="form-label">Title</label><input type="text" name="title" class="form-control" required></div>
+        <div class="mb-2">
+          <label class="form-label">Department</label>
+          <select name="department_id" class="form-select">
+            <option value="">— Any —</option>
+            {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="3"></textarea></div>
+        <button class="btn btn-primary w-100">Post Opening</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

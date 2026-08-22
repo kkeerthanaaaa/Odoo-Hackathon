@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Attendance - Dayflow HRMS{% endblock %}
+{% block page_title %}Attendance{% endblock %}
+{% block page_sub %}Viewing {{ sel_date }}{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-md-8">
+    {% if current_user.employee_id %}
+    <div class="section-card mb-3">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="section-title mb-0"><i class="fa-solid fa-user-clock me-2"></i>My Attendance Today</h6>
+        <div class="d-flex gap-2">
+          <form method="POST" action="{{ url_for('attendance_checkin') }}"><button class="btn btn-outline-primary btn-sm">Check In</button></form>
+          <form method="POST" action="{{ url_for('attendance_checkout') }}"><button class="btn btn-outline-primary btn-sm">Check Out</button></form>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#correctionModal">Request Correction</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="section-card">
+      <form method="GET" class="d-flex gap-2 mb-3">
+        <input type="date" name="date" value="{{ sel_date }}" class="form-control" style="max-width:220px;">
+        <button class="btn btn-outline-primary">View</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Employee</th><th>Check In</th><th>Check Out</th><th>Status</th>{% if can_mark %}<th class="text-end">Actions</th>{% endif %}</tr></thead>
+          <tbody>
+          {% for r in records %}
+          <tr>
+            <td>{{ r.employee.full_name }}</td>
+            <td>{{ r.check_in.strftime('%I:%M %p') if r.check_in else '—' }}</td>
+            <td>{{ r.check_out.strftime('%I:%M %p') if r.check_out else '—' }}</td>
+            <td><span class="badge status-{{ r.status|replace(' ','-') }}">{{ r.status }}</span></td>
+            {% if can_mark %}
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('attendance_mark') }}" class="d-inline-flex gap-1">
+                <input type="hidden" name="employee_id" value="{{ r.employee_id }}">
+                <input type="hidden" name="att_date" value="{{ sel_date }}">
+                <select name="status" class="form-select form-select-sm" style="width:130px;">
+                  {% for s in ['Present','Absent','Half Day','On Leave','Holiday'] %}
+                  <option value="{{ s }}" {{ 'selected' if r.status == s }}>{{ s }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-sm btn-outline-primary">Update</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+          {% for e in unmarked %}
+          <tr class="table-light">
+            <td>{{ e.full_name }}</td><td>—</td><td>—</td><td><span class="badge badge-soft-gray">Unmarked</span></td>
+            {% if can_mark %}
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('attendance_mark') }}" class="d-inline-flex gap-1">
+                <input type="hidden" name="employee_id" value="{{ e.id }}">
+                <input type="hidden" name="att_date" value="{{ sel_date }}">
+                <select name="status" class="form-select form-select-sm" style="width:130px;">
+                  {% for s in ['Present','Absent','Half Day','On Leave','Holiday'] %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-sm btn-outline-primary">Mark</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+          {% if not records and not unmarked %}
+          <tr><td colspan="5" class="text-muted small text-center py-3">No records for this date.</td></tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    {% if current_user.role in ('Admin','HR','Manager') %}
+    <div class="section-card mb-3">
+      <h6 class="section-title mb-3"><i class="fa-solid fa-hourglass-half me-2"></i>Pending Corrections</h6>
+      {% for c in pending_corrections %}
+      <div class="timeline-item d-block">
+        <div class="d-flex justify-content-between">
+          <span class="fw-semibold small">{{ c.employee.full_name }}</span>
+          <span class="text-muted small">{{ c.att_date }}</span>
+        </div>
+        <div class="text-muted small mb-2">{{ c.reason }}</div>
+        <div class="d-flex gap-2">
+          <form method="POST" action="{{ url_for('attendance_correction_review', corr_id=c.id, action='approve') }}"><button class="btn btn-sm btn-primary">Approve</button></form>
+          <form method="POST" action="{{ url_for('attendance_correction_review', corr_id=c.id, action='reject') }}"><button class="btn btn-sm btn-outline-primary">Reject</button></form>
+        </div>
+      </div>
+      {% else %}<p class="text-muted small mb-0">No pending correction requests.</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if current_user.employee_id %}
+    <div class="section-card">
+      <h6 class="section-title mb-3"><i class="fa-solid fa-clock-rotate-left me-2"></i>My Correction Requests</h6>
+      {% for c in my_corrections %}
+      <div class="d-flex justify-content-between align-items-center small mb-2">
+        <span>{{ c.att_date }}</span>
+        <span class="badge status-{{ c.status|replace(' ','-') }}">{{ c.status }}</span>
+      </div>
+      {% else %}<p class="text-muted small mb-0">No correction requests yet.</p>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if current_user.employee_id %}
+<div class="modal fade" id="correctionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-4">
+        <h6 class="fw-bold mb-3">Request Attendance Correction</h6>
+        <form method="POST" action="{{ url_for('attendance_correction_request') }}">
+          <div class="mb-2">
+            <label class="form-label">Date</label>
+            <input type="date" name="att_date" class="form-control" value="{{ sel_date }}" required>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><label class="form-label">Check In</label><input type="time" name="requested_check_in" class="form-control"></div>
+            <div class="col-6"><label class="form-label">Check Out</label><input type="time" name="requested_check_out" class="form-control"></div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Status</label>
+            <select name="requested_status" class="form-select">
+              <option value="">— No change —</option>
+              {% for s in ['Present','Absent','Half Day','On Leave'] %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Reason</label>
+            <textarea name="reason" class="form-control" rows="2" required></textarea>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary">Submit Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

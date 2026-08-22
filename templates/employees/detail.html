@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}{{ emp.full_name }} - Dayflow HRMS{% endblock %}
+{% block page_title %}{{ emp.full_name }}{% endblock %}
+{% block page_sub %}{{ emp.employee_code }} &middot; {{ emp.designation or 'No designation' }}{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="section-card text-center">
+      <div class="avatar-circle lg mx-auto mb-3">{{ emp.first_name[0] }}{{ emp.last_name[0] }}</div>
+      <h5 class="fw-bold mb-0">{{ emp.full_name }}</h5>
+      <div class="text-muted small mb-2">{{ emp.designation or '—' }}</div>
+      <span class="badge status-{{ emp.employment_status|replace(' ','-') }} mb-3">{{ emp.employment_status }}</span>
+      {% if emp.is_archived %}<div class="alert alert-warning small py-2 mb-3">This employee is archived.</div>{% endif %}
+
+      <table class="table table-sm text-start mb-0">
+        <tr><td class="text-muted">Code</td><td class="text-end fw-semibold">{{ emp.employee_code }}</td></tr>
+        <tr><td class="text-muted">Email</td><td class="text-end fw-semibold">{{ emp.email }}</td></tr>
+        <tr><td class="text-muted">Phone</td><td class="text-end fw-semibold">{{ emp.phone or '—' }}</td></tr>
+        <tr><td class="text-muted">Department</td><td class="text-end fw-semibold">{{ emp.department.name if emp.department else '—' }}</td></tr>
+        <tr><td class="text-muted">Manager</td><td class="text-end fw-semibold">{{ manager.full_name if manager else '—' }}</td></tr>
+        <tr><td class="text-muted">Joined</td><td class="text-end fw-semibold">{{ emp.date_of_joining }}</td></tr>
+        <tr><td class="text-muted">Gender</td><td class="text-end fw-semibold">{{ emp.gender or '—' }}</td></tr>
+      </table>
+
+      {% if can_edit and not emp.is_archived %}
+      <hr>
+      <div class="d-grid gap-2">
+        <a href="{{ url_for('employee_edit', emp_id=emp.id) }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen me-1"></i>Edit Profile</a>
+        <form method="POST" action="{{ url_for('employee_set_status', emp_id=emp.id) }}" class="d-flex gap-2">
+          <select name="employment_status" class="form-select form-select-sm">
+            {% for s in ['Onboarding','Active','On Leave','Notice Period','Inactive','Exited'] %}
+            <option value="{{ s }}" {{ 'selected' if emp.employment_status == s }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline-primary btn-sm">Set</button>
+        </form>
+        <button class="btn btn-outline-primary btn-sm text-danger" data-confirm
+          data-confirm-title="Archive {{ emp.full_name }}?"
+          data-confirm-body="Their record and history will be preserved and can be restored later."
+          data-confirm-action="{{ url_for('employee_archive', emp_id=emp.id) }}"
+          data-confirm-submit-class="btn-danger" data-confirm-submit-label="Archive">
+          <i class="fa-solid fa-box-archive me-1"></i>Archive Employee
+        </button>
+      </div>
+      {% elif can_edit and emp.is_archived %}
+      <hr>
+      <button class="btn btn-primary btn-sm" data-confirm
+        data-confirm-title="Restore {{ emp.full_name }}?"
+        data-confirm-body="This employee will become active in the directory again."
+        data-confirm-action="{{ url_for('employee_restore', emp_id=emp.id) }}"
+        data-confirm-submit-class="btn-primary" data-confirm-submit-label="Restore">
+        <i class="fa-solid fa-rotate-left me-1"></i>Restore Employee
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="section-card mb-3">
+      <h6 class="section-title mb-3"><i class="fa-solid fa-suitcase-rolling me-2"></i>Leave Balances</h6>
+      <div class="row g-2">
+        {% for b in balances %}
+        <div class="col-md-4"><div class="stat-tile py-2 px-3"><div><div class="stat-label">{{ b.leave_type.name }}</div><div class="stat-value" style="font-size:1.2rem;">{{ b.remaining }}/{{ b.allocated }}</div></div></div></div>
+        {% else %}<p class="text-muted small mb-0">No leave balances configured.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="section-card mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="section-title mb-0"><i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Attendance</h6>
+        <a href="{{ url_for('attendance_list') }}" class="section-link">Full attendance &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for a in attendances %}
+          <tr><td>{{ a.att_date }}</td><td>{{ a.check_in.strftime('%I:%M %p') if a.check_in else '—' }}</td>
+            <td>{{ a.check_out.strftime('%I:%M %p') if a.check_out else '—' }}</td>
+            <td><span class="badge status-{{ a.status|replace(' ','-') }}">{{ a.status }}</span></td></tr>
+          {% else %}<tr><td colspan="4" class="text-muted small text-center py-3">No attendance recorded yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-card mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="section-title mb-0"><i class="fa-solid fa-plane-departure me-2"></i>Leave History</h6>
+        <a href="{{ url_for('leave_list') }}" class="section-link">Full leave list &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Type</th><th>From</th><th>To</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for lv in leaves %}
+          <tr><td>{{ lv.leave_type.name }}</td><td>{{ lv.from_date }}</td><td>{{ lv.to_date }}</td>
+            <td><span class="badge status-{{ lv.status|replace(' ','-') }}">{{ lv.status }}</span></td></tr>
+          {% else %}<tr><td colspan="4" class="text-muted small text-center py-3">No leave history.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if show_payroll %}
+    <div class="section-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="section-title mb-0"><i class="fa-solid fa-money-check-dollar me-2"></i>Salary Slips</h6>
+        <a href="{{ url_for('payroll_home') }}" class="section-link">Payroll &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Period</th><th>Gross</th><th>Deductions</th><th>Net Pay</th><th></th></tr></thead>
+          <tbody>
+          {% for s in slips %}
+          <tr><td>{{ s.month }}/{{ s.year }}</td><td>&#8377;{{ '%.0f'|format(s.gross_pay) }}</td>
+            <td>&#8377;{{ '%.0f'|format(s.total_deductions) }}</td><td class="fw-semibold">&#8377;{{ '%.0f'|format(s.net_pay) }}</td>
+            <td><a href="{{ url_for('payroll_slip_detail', slip_id=s.id) }}" class="small">View slip</a></td></tr>
+          {% else %}<tr><td colspan="5" class="text-muted small text-center py-3">No salary slips generated yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}{{ job.title }} - Dayflow HRMS{% endblock %}
+{% block page_title %}{{ job.title }}{% endblock %}
+{% block page_sub %}{{ job.department.name if job.department else 'Any department' }} &middot; <span class="badge status-{{ job.status|replace(' ','-') }}">{{ job.status }}</span>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="section-card mb-3">
+      <h6 class="section-title mb-2">Description</h6>
+      <p class="text-muted small mb-0">{{ job.description or 'No description provided.' }}</p>
+    </div>
+    <div class="section-card">
+      <h6 class="section-title mb-3">Applicants</h6>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Name</th><th>Email</th><th>Status</th>{% if current_user.role in ('Admin','HR') %}<th class="text-end">Update Status</th>{% endif %}</tr></thead>
+          <tbody>
+          {% for a in job.applicants %}
+          <tr>
+            <td>{{ a.name }}</td><td>{{ a.email or '—' }}</td>
+            <td><span class="badge status-{{ a.status|replace(' ','-') }}">{{ a.status }}</span></td>
+            {% if current_user.role in ('Admin','HR') %}
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('applicant_status', app_id=a.id) }}" class="d-inline-flex gap-1">
+                <select name="status" class="form-select form-select-sm" style="width:140px;">
+                  {% for s in ['Applied','Shortlisted','Interview','Hired','Rejected'] %}
+                  <option value="{{ s }}" {{ 'selected' if a.status == s }}>{{ s }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-sm btn-outline-primary">Update</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% else %}<tr><td colspan="4" class="text-muted small text-center py-3">No applicants yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    {% if current_user.role in ('Admin','HR') %}
+    <div class="section-card">
+      <h6 class="section-title mb-3">Add Applicant</h6>
+      <form method="POST" action="{{ url_for('job_apply', job_id=job.id) }}">
+        <div class="mb-2"><label class="form-label">Name</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
+        <div class="mb-3"><label class="form-label">Phone</label><input type="tel" name="phone" class="form-control"></div>
+        <button class="btn btn-primary w-100">Add Applicant</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<a href="{{ url_for('recruitment_list') }}" class="btn btn-outline-primary mt-3"><i class="fa-solid fa-arrow-left me-1"></i>Back to Recruitment</a>
+{% endblock %}

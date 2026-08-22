@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Leave' if editing else 'Apply for Leave' }} - Dayflow HRMS{% endblock %}
+{% block page_title %}{{ 'Edit Leave Request' if editing else 'Apply for Leave' }}{% endblock %}
+{% block page_sub %}{{ 'Only pending requests can be edited' if editing else 'Submit a new leave request' }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="section-card">
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label">Leave Type</label>
+          <select name="leave_type_id" class="form-select" required>
+            {% for lt in leave_types %}
+            <option value="{{ lt.id }}" {{ 'selected' if editing and leave.leave_type_id == lt.id }}>{{ lt.name }} ({{ balances.get(lt.id, 0) }} days remaining)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">From Date</label>
+            <input type="date" name="from_date" class="form-control" required value="{{ leave.from_date if editing else '' }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label">To Date</label>
+            <input type="date" name="to_date" class="form-control" required value="{{ leave.to_date if editing else '' }}">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Reason</label>
+          <textarea name="reason" class="form-control" rows="3" required>{{ leave.reason if editing else '' }}</textarea>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{{ url_for('leave_list') }}" class="btn btn-outline-primary">Cancel</a>
+          <button class="btn btn-primary">{{ 'Save Changes' if editing else 'Submit Request' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="section-card">
+      <h6 class="section-title mb-3"><i class="fa-solid fa-circle-info me-2"></i>Leave Balances</h6>
+      {% for lt in leave_types %}
+      <div class="d-flex justify-content-between small mb-2"><span>{{ lt.name }}</span><span class="fw-semibold">{{ balances.get(lt.id, 0) }} days</span></div>
+      {% endfor %}
+      <hr>
+      <p class="text-muted small mb-0">Your request will go to your manager first, then HR, before final approval. You can withdraw it any time while it's pending.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

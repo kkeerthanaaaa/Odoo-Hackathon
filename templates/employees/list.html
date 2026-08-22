@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'My Team' if team_view else 'Employees' }} - Dayflow HRMS{% endblock %}
+{% block page_title %}{{ 'My Team' if team_view else ('Archived Employees' if show_archived else 'Employees') }}{% endblock %}
+{% block page_sub %}{{ employees|length }} record{{ 's' if employees|length != 1 }}{% endblock %}
+{% block content %}
+
+<div class="section-card">
+  {% if not team_view %}
+  <form method="GET" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Search</label>
+      <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Name, code or email">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Department</label>
+      <select name="department" class="form-select">
+        <option value="">All departments</option>
+        {% for d in departments %}<option value="{{ d.id }}" {{ 'selected' if dept_filter|string == d.id|string }}>{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="">All statuses</option>
+        {% for s in ['Onboarding','Active','On Leave','Notice Period','Inactive','Exited'] %}
+        <option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button class="btn btn-primary flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Filter</button>
+    </div>
+  </form>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('employee_list', archived=0) }}" class="pill-tab {{ 'active' if not show_archived }}">Active</a>
+      <a href="{{ url_for('employee_list', archived=1) }}" class="pill-tab {{ 'active' if show_archived }}">Archived</a>
+    </div>
+    {% if current_user.role in ('Admin','HR') and not show_archived %}
+    <a href="{{ url_for('employee_new') }}" class="btn btn-primary"><i class="fa-solid fa-user-plus me-1"></i>Add Employee</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Employee</th><th>Department</th><th>Designation</th><th>Manager</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for e in employees %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar-circle sm">{{ e.first_name[0] }}{{ e.last_name[0] }}</div>
+              <div><div class="fw-semibold">{{ e.full_name }}</div><div class="text-muted" style="font-size:0.75rem;">{{ e.employee_code }}</div></div>
+            </div>
+          </td>
+          <td>{{ e.department.name if e.department else '—' }}</td>
+          <td>{{ e.designation or '—' }}</td>
+          <td>{{ e.manager.full_name if e.manager else '—' }}</td>
+          <td><span class="badge status-{{ e.employment_status|replace(' ','-') }}">{{ e.employment_status }}</span></td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-1">
+              <a href="{{ url_for('employee_detail', emp_id=e.id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="View"><i class="fa-solid fa-eye"></i></a>
+              {% if current_user.role in ('Admin','HR') %}
+                {% if not e.is_archived %}
+                <a href="{{ url_for('employee_edit', emp_id=e.id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                <button class="btn btn-sm btn-outline-primary btn-icon" title="Archive" data-confirm
+                  data-confirm-title="Archive {{ e.full_name }}?"
+                  data-confirm-body="Their record and history will be preserved and can be restored later. Their login will be deactivated."
+                  data-confirm-action="{{ url_for('employee_archive', emp_id=e.id) }}"
+                  data-confirm-submit-class="btn-danger" data-confirm-submit-label="Archive">
+                  <i class="fa-solid fa-box-archive"></i>
+                </button>
+                {% else %}
+                <button class="btn btn-sm btn-outline-primary btn-icon" title="Restore" data-confirm
+                  data-confirm-title="Restore {{ e.full_name }}?"
+                  data-confirm-body="This employee will become active in the directory again."
+                  data-confirm-action="{{ url_for('employee_restore', emp_id=e.id) }}"
+                  data-confirm-submit-class="btn-primary" data-confirm-submit-label="Restore">
+                  <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                  {% if current_user.role == 'Admin' %}
+                  <button class="btn btn-sm btn-outline-primary btn-icon" title="Delete permanently" data-confirm
+                    data-confirm-title="Permanently delete {{ e.full_name }}?"
+                    data-confirm-body="This cannot be undone. All history for this employee will be removed."
+                    data-confirm-action="{{ url_for('employee_delete', emp_id=e.id) }}"
+                    data-confirm-submit-class="btn-danger" data-confirm-submit-label="Delete Permanently">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center py-4"><div class="empty-state"><i class="fa-solid fa-users"></i><div>No employees found.</div></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

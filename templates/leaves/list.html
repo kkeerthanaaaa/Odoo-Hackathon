@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Leave - Dayflow HRMS{% endblock %}
+{% block page_title %}Leave Management{% endblock %}
+{% block page_sub %}{{ leaves|length }} request{{ 's' if leaves|length != 1 }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-end mb-3">
+  <a href="{{ url_for('leave_apply') }}" class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i>Apply for Leave</a>
+</div>
+
+{% if pending_for_me %}
+<div class="section-card mb-3">
+  <h6 class="section-title mb-3"><i class="fa-solid fa-hourglass-half me-2"></i>Awaiting Your Approval</h6>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for lv in pending_for_me %}
+      <tr>
+        <td>{{ lv.employee.full_name }}</td><td>{{ lv.leave_type.name }}</td><td>{{ lv.from_date }}</td><td>{{ lv.to_date }}</td><td>{{ lv.total_days }}</td>
+        <td class="text-muted small">{{ lv.reason or '—' }}</td>
+        <td class="text-end">
+          <form method="POST" action="{{ url_for('leave_action', leave_id=lv.id, action='approve') }}" class="d-inline"><button class="btn btn-sm btn-primary">Approve</button></form>
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#rejectModal{{ lv.id }}">Reject</button>
+        </td>
+      </tr>
+      <div class="modal fade" id="rejectModal{{ lv.id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body p-4">
+          <h6 class="fw-bold mb-3">Reject leave for {{ lv.employee.full_name }}?</h6>
+          <form method="POST" action="{{ url_for('leave_action', leave_id=lv.id, action='reject') }}">
+            <div class="mb-3"><label class="form-label">Reason (optional)</label><textarea name="reason" class="form-control" rows="2"></textarea></div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn btn-danger">Reject Request</button>
+            </div>
+          </form>
+        </div></div></div>
+      </div>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="section-card">
+  <h6 class="section-title mb-3">All Leave Requests</h6>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for lv in leaves %}
+      <tr>
+        <td>{{ lv.employee.full_name }}</td><td>{{ lv.leave_type.name }}</td><td>{{ lv.from_date }}</td><td>{{ lv.to_date }}</td><td>{{ lv.total_days }}</td>
+        <td>
+          <span class="badge status-{{ lv.status|replace(' ','-') }}">{{ lv.status }}</span>
+          {% if lv.status == 'Rejected' and lv.rejection_reason %}<div class="text-muted" style="font-size:0.72rem;">{{ lv.rejection_reason }}</div>{% endif %}
+        </td>
+        <td class="text-end">
+          {% if lv.employee_id == current_user.employee_id %}
+            {% if lv.status == 'Pending' %}
+            <a href="{{ url_for('leave_edit', leave_id=lv.id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
+            <button class="btn btn-sm btn-outline-primary btn-icon" title="Withdraw" data-confirm
+              data-confirm-title="Withdraw this leave request?"
+              data-confirm-body="You can apply again later if needed."
+              data-confirm-action="{{ url_for('leave_withdraw', leave_id=lv.id) }}"
+              data-confirm-submit-class="btn-danger" data-confirm-submit-label="Withdraw">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            {% elif lv.status == 'Approved' and lv.from_date >= date.today() %}
+            <button class="btn btn-sm btn-outline-primary btn-icon" title="Cancel" data-confirm
+              data-confirm-title="Cancel this approved leave?"
+              data-confirm-body="Your leave balance will be restored."
+              data-confirm-action="{{ url_for('leave_cancel', leave_id=lv.id) }}"
+              data-confirm-submit-class="btn-danger" data-confirm-submit-label="Cancel Leave">
+              <i class="fa-solid fa-ban"></i>
+            </button>
+            {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="7" class="text-muted small text-center py-3">No leave requests.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

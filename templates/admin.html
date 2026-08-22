@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}System Admin - Dayflow HRMS{% endblock %}
+{% block page_title %}System Administration{% endblock %}
+{% block page_sub %}System-wide configuration and health{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-3 col-sm-6"><div class="stat-tile"><div><div class="stat-label">User Accounts</div><div class="stat-value">{{ stats.users }}</div></div><div class="stat-icon icon-purple"><i class="fa-solid fa-user-shield"></i></div></div></div>
+  <div class="col-md-3 col-sm-6"><div class="stat-tile"><div><div class="stat-label">Active Employees</div><div class="stat-value">{{ stats.employees }}</div></div><div class="stat-icon icon-green"><i class="fa-solid fa-users"></i></div></div></div>
+  <div class="col-md-3 col-sm-6"><div class="stat-tile"><div><div class="stat-label">Archived Employees</div><div class="stat-value">{{ stats.archived_employees }}</div></div><div class="stat-icon icon-orange"><i class="fa-solid fa-box-archive"></i></div></div></div>
+  <div class="col-md-3 col-sm-6"><div class="stat-tile"><div><div class="stat-label">Departments</div><div class="stat-value">{{ stats.departments }}</div></div><div class="stat-icon icon-blue"><i class="fa-solid fa-building"></i></div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="section-card">
+      <h6 class="section-title mb-3">Quick Links</h6>
+      <div class="d-grid gap-2">
+        <a href="{{ url_for('user_list') }}" class="btn btn-outline-primary text-start"><i class="fa-solid fa-user-shield me-2"></i>Manage User Accounts</a>
+        <a href="{{ url_for('department_list') }}" class="btn btn-outline-primary text-start"><i class="fa-solid fa-building me-2"></i>Manage Departments</a>
+        <a href="{{ url_for('leave_type_list') }}" class="btn btn-outline-primary text-start"><i class="fa-solid fa-list-check me-2"></i>Manage Leave Types</a>
+        <a href="{{ url_for('audit_log_view') }}" class="btn btn-outline-primary text-start"><i class="fa-solid fa-clipboard-list me-2"></i>View Audit Log ({{ stats.audit_entries }} entries)</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="section-card">
+      <h6 class="section-title mb-3">System Health</h6>
+      <div class="d-flex justify-content-between small mb-2"><span>Database</span><span class="badge badge-soft-green">Connected</span></div>
+      <div class="d-flex justify-content-between small mb-2"><span>Authentication</span><span class="badge badge-soft-green">Operational</span></div>
+      <div class="d-flex justify-content-between small mb-0"><span>Audit Logging</span><span class="badge badge-soft-green">Enabled</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
